@@ -1,0 +1,136 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+if (php_sapi_name() !== 'cli') {
+    fwrite(STDERR, "Error: This tool must be run from the command line.\n");
+    exit(1);
+}
+
+// Autoloader: support Composer vendor/autoload or standalone src/autoload.php
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require __DIR__ . '/../vendor/autoload.php';
+} else {
+    require __DIR__ . '/../src/autoload.php';
+}
+
+use EidCloud\SiteGen\SiteGenerator;
+use EidCloud\SiteGen\Server\DevServer;
+
+$args = array_slice($argv, 1);
+
+function showHelp(): void
+{
+    echo <<<'HELP'
+eidcloud-site - High-Speed Deterministic Static Site Generator (Pure PHP)
+
+USAGE:
+  php bin/eidcloud-site <command> [options]
+
+COMMANDS:
+  build <content-dir> [options]    Compile Markdown & assets into static HTML
+  serve <dist-dir> [options]       Launch live development preview server
+  version                          Show version information
+  help, --help, -h                 Display this help information
+
+OPTIONS for 'build':
+  --out=<path>        Output directory for compiled HTML (default: ./dist/)
+  --dev               Enable live-reload simulation script in HTML
+  --base-url=<url>    Override site base URL in compiled metadata
+
+OPTIONS for 'serve':
+  --port=<num>        HTTP server port (default: 3000)
+  --host=<addr>       HTTP server host (default: 127.0.0.1)
+
+EXAMPLES:
+  php bin/eidcloud-site build ./content/ --out=./dist/
+  php bin/eidcloud-site build ./docs/ --out=./public/ --dev
+  php bin/eidcloud-site serve ./dist/ --port=3000
+  php bin/eidcloud-site --help
+
+HELP;
+}
+
+if (empty($args) || in_array('--help', $args, true) || in_array('-h', $args, true) || $args[0] === 'help') {
+    showHelp();
+    exit(0);
+}
+
+$command = $args[0];
+
+if ($command === 'version' || in_array('--version', $args, true) || in_array('-v', $args, true)) {
+    echo "eidcloud-site-gen v1.0.0 (PHP " . PHP_VERSION . ")\n";
+    exit(0);
+}
+
+if ($command === 'build') {
+    $contentDir = $args[1] ?? './content/';
+    $outputDir = './dist/';
+    $devMode = false;
+    $baseUrl = null;
+
+    foreach (array_slice($args, 1) as $arg) {
+        if (str_starts_with($arg, '--out=')) {
+            $outputDir = substr($arg, 6);
+        } elseif ($arg === '--dev') {
+            $devMode = true;
+        } elseif (str_starts_with($arg, '--base-url=')) {
+            $baseUrl = substr($arg, 11);
+        } elseif (!str_starts_with($arg, '--') && $arg !== $contentDir) {
+            $contentDir = $arg;
+        }
+    }
+
+    echo "\033[1;36m[EidCloud SiteGen]\033[0m Building static site from \033[33m{$contentDir}\033[0m -> \033[32m{$outputDir}\033[0m\n";
+
+    try {
+        $config = [];
+        if ($baseUrl !== null) {
+            $config['baseUrl'] = $baseUrl;
+        }
+
+        $generator = new SiteGenerator($config);
+        $result = $generator->build($contentDir, $outputDir, $devMode);
+
+        echo sprintf(
+            "\033[32m[SUCCESS]\033[0m Compiled %d pages in %.2f ms to %s\n",
+            $result['pagesCount'],
+            $result['durationMs'],
+            $result['outputDir']
+        );
+        echo "Generated: sitemap.xml, robots.txt, Schema.org JSON-LD, LTR & RTL assets.\n";
+        exit(0);
+    } catch (\Throwable $e) {
+        fwrite(STDERR, "\033[31m[ERROR]\033[0m " . $e->getMessage() . "\n");
+        exit(1);
+    }
+}
+
+if ($command === 'serve') {
+    $distDir = $args[1] ?? './dist/';
+    $port = 3000;
+    $host = '127.0.0.1';
+
+    foreach (array_slice($args, 1) as $arg) {
+        if (str_starts_with($arg, '--port=')) {
+            $port = (int)substr($arg, 7);
+        } elseif (str_starts_with($arg, '--host=')) {
+            $host = substr($arg, 7);
+        } elseif (!str_starts_with($arg, '--')) {
+            $distDir = $arg;
+        }
+    }
+
+    try {
+        $server = new DevServer($distDir, $port, $host);
+        $server->start();
+        exit(0);
+    } catch (\Throwable $e) {
+        fwrite(STDERR, "\033[31m[ERROR]\033[0m " . $e->getMessage() . "\n");
+        exit(1);
+    }
+}
+
+fwrite(STDERR, "Unknown command '{$command}'. Run 'php bin/eidcloud-site --help' for available commands.\n");
+exit(1);

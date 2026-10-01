@@ -1,0 +1,9 @@
+{
+  "title": "EidCloud Documentation Platform",
+  "baseUrl": "https://eidcloud.com",
+  "description": "Enterprise-grade static site generator with bi-directional Arabic and English support",
+  "author": "MHD. Shadi AL-Hasan",
+  "defaultLanguage": "en",
+  "languages": ["en", "ar"],
+  "footerText": "© 2026 MHD. Shadi AL-Hasan. Built for EidCloud."
+}

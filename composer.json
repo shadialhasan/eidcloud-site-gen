@@ -1,0 +1,26 @@
+{
+  "name": "eidcloud/eidcloud-site-gen",
+  "description": "High-speed deterministic static site generator with native RTL, i18n, and automated SEO schema in pure PHP",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "MHD. Shadi AL-Hasan",
+      "role": "Author & Maintainer"
+    }
+  ],
+  "require": {
+    "php": ">=8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "EidCloud\\SiteGen\\": "src/"
+    }
+  },
+  "bin": [
+    "bin/eidcloud-site"
+  ],
+  "scripts": {
+    "test": "php tests/run_tests.php"
+  }
+}

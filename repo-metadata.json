@@ -1,0 +1,12 @@
+{
+  "description": "High-speed deterministic static site generator with native RTL, i18n, and automated SEO schema in pure PHP",
+  "topics": [
+    "eidcloud",
+    "static-site-generator",
+    "ssg",
+    "rtl-support",
+    "i18n",
+    "seo-generator",
+    "php8"
+  ]
+}
